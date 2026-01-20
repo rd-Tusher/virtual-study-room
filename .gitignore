@@ -1,0 +1,36 @@
+# ======================
+# Java / JVM
+# ======================
+*.class
+*.jar
+*.war
+*.ear
+
+# ======================
+# Maven / Build
+# ======================
+**/target/
+**/bin/
+**/out/
+
+# ======================
+# IDE / Editor
+# ======================
+**/.vscode/
+**/.idea/
+*.iml
+.project
+.classpath
+.settings/
+
+# ======================
+# Environment / Secrets
+# ======================
+.env
+application.properties
+application.yml
+
+# ======================
+# Database
+# ======================
+*.db
