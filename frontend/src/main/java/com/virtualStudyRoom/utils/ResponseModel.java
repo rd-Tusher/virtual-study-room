@@ -12,5 +12,8 @@ public class ResponseModel {
         public String status;
         public String startTime;
         public Long remainingSeconds;
+        public String sessionID;
+        public String userID;
+        public String name;
     }
-}
+} 

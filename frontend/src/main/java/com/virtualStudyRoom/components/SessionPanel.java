@@ -78,18 +78,7 @@ public class SessionPanel extends JPanel {
         layeredPane.repaint();
     }
     
-    
-// public void showUserPopup() {
-//     if (userOverlay != null) return;
 
-//     userOverlay = UserPopupFactory.createOverlay(
-//             layeredPane,
-//             getSize()
-//     );
-
-//     layeredPane.add(userOverlay, JLayeredPane.MODAL_LAYER);
-//     layeredPane.repaint();
-// }
 
 public void showUserPopup() {
     if (userOverlay != null) return;
@@ -111,6 +100,10 @@ public void hideUserPopup() {
         layeredPane.revalidate();
         layeredPane.repaint();
     }
+}
+
+public Whiteboard getWhiteboard(){
+    return whiteboard;
 }
 
 }

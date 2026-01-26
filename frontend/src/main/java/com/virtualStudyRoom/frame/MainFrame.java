@@ -53,6 +53,7 @@ public class MainFrame extends JFrame {
         root.add(sDialogue, CREATE_SESSION);
         root.add(joinPage, JOIN_SESSION);
         root.add(sessionInfoPage, SESSION_INFO);
+        // cardLayout.show(root, SESSION);
         cardLayout.show(root, LANDING);
         setVisible(true);
     }

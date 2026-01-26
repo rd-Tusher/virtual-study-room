@@ -21,67 +21,52 @@ public class ScreenRecorder {
     public void startRecording() {
         try {
 
-            // Temporary file for safe recording
             File tempFile = File.createTempFile("session_", ".mp4");
             tempFilePath = tempFile.getAbsolutePath();
 
             List<String> command = new ArrayList<>();
             command.add("ffmpeg");
-            command.add("-y"); // overwrite if exists
+            command.add("-y");
 
-            /* ===================== OS-SPECIFIC INPUT ===================== */
             if (osType.isWindows()) {
                 command.addAll(List.of(
                         "-f", "gdigrab",
                         "-framerate", "30",
-                        "-i", "desktop",
-                        "-f", "dshow",
-                        "-i", "audio=Microphone"
+                        "-i", "desktop"
                 ));
             } else if (osType.isMac()) {
                 command.addAll(List.of(
                         "-f", "avfoundation",
                         "-framerate", "30",
-                        "-i", "1:0" // 1 = screen, 0 = microphone
+                        "-i","1"
                 ));
-            } else if (osType.isLinux()) {
+            } 
+            else if (osType.isLinux()) {
                 String micDevice = getMicName.getLinuxMic();
                 System.out.println("Using microphone: " + micDevice);
                 command.addAll(List.of(
                         "-f", "x11grab",
                         "-framerate", "30",
-                        "-i", ":0.0",
-                        "-f", "pulse",
-                        "-thread_queue_size","1024",
-                        "-i", micDevice
+                        "-i", ":0.0"
                 ));
             }
 
-            /* ===================== OUTPUT SETTINGS ===================== */
 
             command.addAll(List.of(
-                "-map", "0:v",    // first input = video
-                "-map", "1:a",    // second input = audio
-                "-af", "volume=1.0,aresample=async=1",
+                "-map", "0:v",    
                 "-c:v", "libx264",
                 "-preset", "slow",
                 "-crf", "18",
                 "-pix_fmt", "yuv420p",
-                "-c:a", "aac",
-                "-b:a", "128k",
-                "-ar", "48000",
-                "-ac", "2",
                 tempFilePath
             ));
 
 
-            // Start FFmpeg process
             ProcessBuilder pb = new ProcessBuilder(command);
             pb.redirectErrorStream(true);
             ffmpegProcess = pb.start();
 
-            // Consume FFmpeg output to prevent blocking
-            new Thread(() -> {
+           new Thread(() -> {
                 try (BufferedReader reader = new BufferedReader(
                         new InputStreamReader(ffmpegProcess.getInputStream()))) {
                     String line;
@@ -107,12 +92,11 @@ public class ScreenRecorder {
 
             if (ffmpegProcess != null) {
                 OutputStream os = ffmpegProcess.getOutputStream();
-                os.write("q\n".getBytes()); // gracefully stop FFmpeg
+                os.write("q\n".getBytes()); 
                 os.flush();
                 ffmpegProcess.waitFor();
                 ffmpegProcess = null;
 
-                // Move temp file to final destination
                 Path finalPath = Paths.get(absolutePath);
                 Files.createDirectories(finalPath.getParent());
                 Files.move(Paths.get(tempFilePath), finalPath, StandardCopyOption.REPLACE_EXISTING);
@@ -125,4 +109,3 @@ public class ScreenRecorder {
         }
     }
 }
-

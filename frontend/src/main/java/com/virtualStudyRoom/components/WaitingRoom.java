@@ -13,7 +13,7 @@ public class WaitingRoom extends JPanel {
 
     private LandingPage landingPage = new LandingPage();
     private SessionPanel sessionPanel;
-
+    protected SessionWebSocketClient wsClient;
 
     public WaitingRoom(SessionCheckModel response, MainFrame frame) {
         setLayout(new BorderLayout());
@@ -21,8 +21,11 @@ public class WaitingRoom extends JPanel {
 
 
         if ("LIVE".equals(response.status)) {
-            System.out.println(response);
+            wsClient = new SessionWebSocketClient("ws://localhost:8080/session-websocket", response.sessionID,response.name,response.userID);
+            SessionWebSocketClient.setInstance(wsClient);
             showLiveSession(frame);
+            System.out.println(response.sessionID);  
+            UserPopupFactory.setSessionID(response.sessionID);
         } else {
             showNonLiveState(response);
         }
@@ -30,12 +33,13 @@ public class WaitingRoom extends JPanel {
 
     private void showLiveSession(MainFrame frame) {
         sessionPanel = new SessionPanel(frame);
+        wsClient.setWhiteboard(sessionPanel.getWhiteboard());
         add(sessionPanel, BorderLayout.CENTER);
 
         revalidate();
         repaint();
     }
-
+ 
     private void showNonLiveState(SessionCheckModel response) {
 
         add(landingPage.header(), BorderLayout.NORTH);

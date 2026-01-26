@@ -2,8 +2,8 @@ package com.virtualstudyroom.backend.Service;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
@@ -18,6 +18,10 @@ public class CheckSessionService {
 
     @Autowired
     MongoTemplate mongoTemplate;
+    @Autowired
+    SessionTracker sTracker;
+    @Autowired
+    SessionEventService seService;
 
     public CompletableFuture<Map<String, Object>> checkSession(String name,String joinCode) {
 
@@ -30,12 +34,10 @@ public class CheckSessionService {
             return CompletableFuture.completedFuture(
                     Map.of("status", "NOT_FOUND", "message", "No session found with this join code")
             );
-        }
+        }  
 
         Instant now = Instant.now();
         Instant start = res.getStartTime();
-        System.out.println(now);
-        System.out.println(start);
         Instant end = res.getEndTime();
 
         if (now.isBefore(start) ) {
@@ -49,7 +51,7 @@ public class CheckSessionService {
                     )
             );
         }
-
+       
         if (now.isAfter(end)) {
             return CompletableFuture.completedFuture(
                     Map.of(
@@ -61,16 +63,25 @@ public class CheckSessionService {
         }
 
         if(now.isAfter(start) && now.isBefore(end)){
+                String userID = UUID.randomUUID().toString().split("-")[0];
             JoinedUserModel userModel = JoinedUserModel.builder()
-                    .name(name).build();
+                    .name(name)
+                    .userID(userID)
+                    .sessionID(joinCode)
+                    .joinedAT(Instant.now())
+                    .build();
                     if (userModel != null) {
                         mongoTemplate.save(userModel);
+                        sTracker.addUser(joinCode, name,userID);
                     }
             return CompletableFuture.completedFuture(
                     Map.of(
                             "status", "LIVE",
                             "startTime", start.toString(),
-                            "remainingSeconds", 0
+                            "remainingSeconds", 0,
+                            "sessionID" , joinCode,
+                            "userID",userID,
+                            "name",name
                     )
             );
         }

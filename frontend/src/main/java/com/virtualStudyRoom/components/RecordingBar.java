@@ -21,7 +21,6 @@ public class RecordingBar extends JPanel {
     private final int arc = 20;
     private final Color bgColor = new Color(60, 60, 60, 220);
 
-    // Blinking dot
     private boolean showDot = true;
     private Timer blinkTimer;
     private final int dotSize = 12;
@@ -45,7 +44,6 @@ public class RecordingBar extends JPanel {
         elapsedSec = 0;
         setVisible(true);
 
-        // Timer for recording time
         timer = new Timer(1000, e -> {
             elapsedSec++;
             int minutes = elapsedSec / 60;
@@ -54,7 +52,6 @@ public class RecordingBar extends JPanel {
         });
         timer.start();
 
-        // Timer for blinking red dot (toggle every 500ms)
         blinkTimer = new Timer(500, e -> {
             showDot = !showDot;
             repaint(); 
@@ -67,7 +64,10 @@ public class RecordingBar extends JPanel {
         if (blinkTimer != null) blinkTimer.stop();
         elapsedSec = 0;
         repaint();
+        statusLabel.setText("Recording ... 00:00");
         setVisible(false);
+
+        repaint();
     }
 
     @Override
@@ -77,13 +77,11 @@ public class RecordingBar extends JPanel {
         Graphics2D g2 = (Graphics2D) g.create();
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Draw background
         g2.setColor(bgColor);
         g2.fillRoundRect(0, 0, getWidth(), getHeight(), arc, arc);
 
-        // Draw blinking red dot
         if (showDot) {
-            int dotX = 10; // 10px from left
+            int dotX = 10;
             int dotY = getHeight() / 2 - dotSize / 2;
             g2.setColor(dotColor);
             g2.fillOval(dotX, dotY, dotSize, dotSize);

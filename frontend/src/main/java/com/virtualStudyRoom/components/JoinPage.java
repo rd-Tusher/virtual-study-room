@@ -22,6 +22,10 @@ public class JoinPage extends JPanel{
     private LandingPage landingPage = new LandingPage();
     private CreateSessionDialog sDialogue = new CreateSessionDialog(null);
     private MainFrame frame;
+    private static SessionCheckModel sessionCheckModel;
+
+    public JoinPage(){}
+
     public JoinPage(MainFrame frame){
         this.frame = frame;
         setLayout(new BorderLayout());
@@ -57,9 +61,14 @@ public class JoinPage extends JPanel{
             SessionCheckModel mainRes = gson.fromJson(fullJson , SessionCheckModel.class);
             if (mainRes != null) {
                 System.out.println(mainRes.remainingSeconds);
+                sessionCheckModel = mainRes;
                 frame.showWaitingRoom(mainRes);
             }
         });
         return panel;
+    }
+    public static SessionCheckModel getCheckModel(){
+        System.out.println(sessionCheckModel.name + sessionCheckModel.userID + sessionCheckModel.sessionID);
+        return sessionCheckModel;
     }
 }

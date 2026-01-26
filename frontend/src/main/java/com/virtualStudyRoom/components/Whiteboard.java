@@ -10,11 +10,9 @@ import java.util.List;
 
 public class Whiteboard extends JPanel {
 
-    // ================= CONFIG =================
     private static final int GROW_BY = 1200;
     private static final int BOTTOM_THRESHOLD = 220;
 
-    // ================= STATE ==================
     private int canvasWidth;
     private int canvasHeight;
 
@@ -23,11 +21,11 @@ public class Whiteboard extends JPanel {
 
     private final JFrame parentFrame;
 
-    // ================= STROKE MODEL ==================
-    private static class Stroke {
+    public static class Stroke {
         Color color;
         float strokeSize;
         List<Point> points;
+        
 
         Stroke(Color color, float strokeSize) {
             this.color = color;
@@ -39,19 +37,16 @@ public class Whiteboard extends JPanel {
     private final List<Stroke> strokes = new ArrayList<>();
     private Stroke currentStroke = null;
 
-    // ================= CONSTRUCTOR =================
     public  Whiteboard(JFrame frame) {
         this.parentFrame = frame;
 
         setBackground(Color.BLACK);
         setOpaque(true);
 
-        // Initialize canvas size based on parent frame
         canvasWidth = frame.getWidth();
         canvasHeight = frame.getHeight();
         updatePanelSize();
 
-        // Mouse listeners
         MouseAdapter mouseHandler = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
@@ -64,20 +59,28 @@ public class Whiteboard extends JPanel {
                 if (currentStroke != null) {
                     currentStroke.points.add(new Point(e.getX(), e.getY()));
 
-                    // Auto-grow if near bottom
                     if (e.getY() >= canvasHeight - BOTTOM_THRESHOLD) {
+                        
+                        int oldHeight = canvasHeight;
                         growCanvas(GROW_BY);
+
+                        SessionWebSocketClient client = SessionWebSocketClient.getInstance();
+                        if (client != null && canvasHeight > oldHeight) {
+                            client.sendCanvasResize(canvasHeight - oldHeight);
+                        }
                     }
 
                     repaint();
                 }
-                
             }
 
             @Override
             public void mouseReleased(MouseEvent e) {
                 if (currentStroke != null) {
                     strokes.add(currentStroke);
+                    if(SessionWebSocketClient.getInstance() != null){
+                        SessionWebSocketClient.getInstance().sendStroke(new StrokeDTO(currentStroke));
+                    }
                     currentStroke = null;
                     repaint();
                 }
@@ -87,7 +90,6 @@ public class Whiteboard extends JPanel {
         addMouseListener(mouseHandler);
         addMouseMotionListener(mouseHandler);
 
-        // Listen for window resize to make canvas dynamic
         frame.addComponentListener(new ComponentAdapter() {
             @Override
             public void componentResized(ComponentEvent e) {
@@ -99,19 +101,16 @@ public class Whiteboard extends JPanel {
         });
     }
 
-    // ================= CANVAS GROW =================
-    private void growCanvas(int growBy) {
+    public void growCanvas(int growBy) {
         canvasHeight += growBy;
         updatePanelSize();
     }
 
-    // ================= PANEL SIZE =================
     private void updatePanelSize() {
         setPreferredSize(new Dimension(canvasWidth, canvasHeight));
         revalidate();
     }
 
-    // ================= DRAW =================
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
@@ -119,16 +118,13 @@ public class Whiteboard extends JPanel {
 
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // Fill background
         g2.setColor(Color.BLACK);
         g2.fillRect(0, 0, canvasWidth, canvasHeight);
 
-        // Draw all strokes
         for (Stroke s : strokes) {
             drawStroke(g2, s);
         }
 
-        // Draw current stroke while drawing
         if (currentStroke != null) {
             drawStroke(g2, currentStroke);
         }
@@ -152,7 +148,6 @@ public class Whiteboard extends JPanel {
     for (int i = 1; i < s.points.size(); i++) {
         Point curr = s.points.get(i);
 
-        // midpoint smoothing
         int midX = (prev.x + curr.x) / 2;
         int midY = (prev.y + curr.y) / 2;
 
@@ -160,14 +155,12 @@ public class Whiteboard extends JPanel {
         prev = curr;
     }
 
-    // final line
     path.lineTo(prev.x, prev.y);
 
     g2.draw(path);
 }
 
 
-    // ================= PUBLIC API =================
     public void setPenColor(Color color) {
         this.penColor = color;
     }
@@ -194,7 +187,11 @@ public class Whiteboard extends JPanel {
         }
     }
 
-    // Optional: add new page (increase canvas height)
+    public void addRemoteStroke(Stroke stroke){
+        strokes.add(stroke);
+        repaint();
+    }
+
     public void newPage() {
         growCanvas(parentFrame.getHeight());
         repaint();
@@ -205,11 +202,9 @@ public class Whiteboard extends JPanel {
 
         Graphics2D g2 = img.createGraphics();
 
-        // Rendering hints once
         g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-        // White background
-        g2.setColor(Color.WHITE);
+        g2.setColor(Color.BLACK);
         g2.fillRect(0, 0, parentFrame.getWidth(),parentFrame.getHeight());
 
         for (Stroke stroke : strokes) {
@@ -236,6 +231,12 @@ public class Whiteboard extends JPanel {
 
         g2.dispose();
         return img;
+    }
+
+
+    public static class CanvasResizeDTO {
+        public int canvasHeight;
+        public String senderID;
     }
 
 }

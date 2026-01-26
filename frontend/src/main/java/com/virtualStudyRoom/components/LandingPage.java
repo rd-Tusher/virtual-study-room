@@ -66,7 +66,6 @@ public class LandingPage extends JPanel {
 
         createBtn.addActionListener(e -> {
                 frame.createSession();
-                // frame.showSession();
         });
 
         joinBtn.addActionListener(e -> {
