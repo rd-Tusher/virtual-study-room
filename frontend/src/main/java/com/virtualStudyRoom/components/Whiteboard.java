@@ -1,20 +1,29 @@
 package com.virtualStudyRoom.components;
 
 import javax.swing.*;
+
+import com.virtualStudyRoom.components.StrokeDTO.StrokeType;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class Whiteboard extends JPanel {
 
     private static final int GROW_BY = 1200;
     private static final int BOTTOM_THRESHOLD = 220;
 
+    private final long THROTTLE_MS = 20;
+    private long lastSent = 0;
     private int canvasWidth;
     private int canvasHeight;
+
+    private String strokeID;
+    private final SessionWebSocketClient client = SessionWebSocketClient.getInstance();
 
     private Color penColor = Color.WHITE;
     private float strokeSize = 3f;
@@ -25,6 +34,7 @@ public class Whiteboard extends JPanel {
         Color color;
         float strokeSize;
         List<Point> points;
+        String owner;
         
 
         Stroke(Color color, float strokeSize) {
@@ -51,20 +61,34 @@ public class Whiteboard extends JPanel {
             @Override
             public void mousePressed(MouseEvent e) {
                 currentStroke = new Stroke(penColor, strokeSize);
-                currentStroke.points.add(new Point(e.getX(), e.getY()));
+                Point newPoint = new Point(e.getX(), e.getY());
+                currentStroke.points.add(newPoint);
+
+                if (client != null) {
+                    strokeID = UUID.randomUUID().toString();
+                    List<StrokeDTO.PointDTO> points = List.of(new StrokeDTO.PointDTO(e.getX(), e.getY()) );
+                    client.sendStroke(new StrokeDTO(strokeID, strokeSize, penColor.getRGB(), points, StrokeType.START));
+                }
             }
 
             @Override
             public void mouseDragged(MouseEvent e) {
                 if (currentStroke != null) {
-                    currentStroke.points.add(new Point(e.getX(), e.getY()));
+                    Point newPoint = new Point(e.getX(), e.getY());
+                    currentStroke.points.add(newPoint);
 
+                    long now = System.currentTimeMillis();
+                    long duration = now - lastSent;
+                    if (client != null && duration> THROTTLE_MS) {
+                        lastSent = now;
+                        List<StrokeDTO.PointDTO> points = List.of(new StrokeDTO.PointDTO(e.getX(), e.getY()) );
+                        client.sendStroke(new StrokeDTO(strokeID, strokeSize,penColor.getRGB(),points,StrokeType.DRAW));
+                    }
                     if (e.getY() >= canvasHeight - BOTTOM_THRESHOLD) {
                         
                         int oldHeight = canvasHeight;
                         growCanvas(GROW_BY);
 
-                        SessionWebSocketClient client = SessionWebSocketClient.getInstance();
                         if (client != null && canvasHeight > oldHeight) {
                             client.sendCanvasResize(canvasHeight - oldHeight);
                         }
@@ -79,7 +103,7 @@ public class Whiteboard extends JPanel {
                 if (currentStroke != null) {
                     strokes.add(currentStroke);
                     if(SessionWebSocketClient.getInstance() != null){
-                        SessionWebSocketClient.getInstance().sendStroke(new StrokeDTO(currentStroke));
+                        client.sendStroke(new StrokeDTO(strokeID, strokeSize, penColor.getRGB(), null, StrokeType.END));
                     }
                     currentStroke = null;
                     repaint();

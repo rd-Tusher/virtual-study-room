@@ -1,6 +1,7 @@
 package com.virtualStudyRoom.components;
 
 import com.virtualStudyRoom.components.BackendToFrontend.User;
+import com.virtualStudyRoom.components.StrokeDTO.StrokeType;
 import com.virtualStudyRoom.components.Whiteboard.CanvasResizeDTO;
 
 import org.springframework.messaging.simp.stomp.*;
@@ -22,8 +23,9 @@ import javax.swing.SwingUtilities;
 public class SessionWebSocketClient {
 
     private static SessionWebSocketClient instance;
-    private static final Map<String, List<User>> sessionUserCache =
-            new ConcurrentHashMap<>();
+    private static final Map<String, List<User>> sessionUserCache = new ConcurrentHashMap<>();
+
+    Map<String, Whiteboard.Stroke> activeRemoteStrokes = new ConcurrentHashMap<>();
 
     private String sessionID;
     private boolean connected = false;
@@ -175,18 +177,35 @@ public class SessionWebSocketClient {
             if (userID != null && userID.equals(strokeDTO.senderID)) {
                 return;
             }
+            SwingUtilities.invokeLater(()->{
+                if(strokeDTO.type == StrokeType.START){
+                    Whiteboard.Stroke stroke = new Whiteboard.Stroke(new Color(strokeDTO.getColorRGB()), strokeDTO.getStrokeSize());
 
-            Whiteboard.Stroke stroke = new Whiteboard.Stroke( new Color(strokeDTO.colorRGB), strokeDTO.strokeSize );
+                    if(strokeDTO.getPoints() != null){
+                        for (StrokeDTO.PointDTO p : strokeDTO.getPoints()) {
+                            stroke.points.add(new Point(p.getX(), p.getY()));
+                        }
+                    }
+                    activeRemoteStrokes.put(strokeDTO.getStrokeID(), stroke);
+                    return;
+                }
 
-            for (StrokeDTO.PointDTO p : strokeDTO.points) {
-                stroke.points.add(new Point(p.x, p.y));
-            }
+                Whiteboard.Stroke stroke = activeRemoteStrokes.get(strokeDTO.getStrokeID());
+                if (stroke != null && strokeDTO.getPoints() != null) {
+                    for (StrokeDTO.PointDTO p : strokeDTO.getPoints()) {
+                        stroke.points.add(new Point(p.getX(), p.getY()));
+                    }
+                    whiteboard.repaint();
+                }
 
-            if (whiteboard != null) {
-                SwingUtilities.invokeLater(() ->
-                        whiteboard.addRemoteStroke(stroke)
-                );
-            }
+                if (strokeDTO.getType() == StrokeType.END) {
+                    if(stroke != null){
+                        whiteboard.addRemoteStroke(stroke);
+                        activeRemoteStrokes.remove(strokeDTO.getStrokeID());
+                    }
+                }
+
+            });
         }
     }
 
@@ -250,6 +269,4 @@ public class SessionWebSocketClient {
         public String userID;
         public String name;
     }
-
-    
 }

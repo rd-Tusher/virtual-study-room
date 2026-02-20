@@ -8,6 +8,8 @@ import com.virtualStudyRoom.utils.ResponseModel.SessionResponse;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.time.Instant;
 
 public class CreateSessionDialog extends JPanel {
@@ -134,6 +136,16 @@ public class CreateSessionDialog extends JPanel {
                 frame.showSessionInfo(jsonResponse);
             }
             System.out.println("The response from backend  :  " + jsonResponse.joinCode);
+        });
+
+        cancel.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e){
+                MainFrame frame = MainFrame.getMainFrame();
+                if(frame != null){
+                    frame.showLanding();
+                }
+            }
         });
 
         return panel;

@@ -34,6 +34,7 @@ public class SessionEventService {
 
     public void broadcastStroke(String sessionID, StrokeDTO stroke){
         if (stroke != null) {
+            System.out.println(sessionID);
             messagingTemplate.convertAndSend("/topic/session/" + sessionID + "/whiteboard",stroke);
         }
     }

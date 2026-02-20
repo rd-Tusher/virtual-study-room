@@ -58,13 +58,15 @@ public class JoinedUserModel {
 
     @Data 
     public static class StrokeDTO{
-        private String senderID;
-        private String color;
-        private float strokeSize;
-        private List<Point> points;
+    public String senderID;
+    public String strokeID;
+    public float strokeSize;
+    public int colorRGB;
+    public List<PointDTO> points;
+    public StrokeType type;
 
-        public StrokeDTO(String color, float strokeSize, List<Point> points){
-            this.color = color;
+        public StrokeDTO(int colorRGB, float strokeSize, List<PointDTO> points){
+            this.colorRGB = colorRGB;
             this.points = points;
             this.strokeSize = strokeSize;
         }
@@ -81,5 +83,28 @@ public class JoinedUserModel {
             this.sessionID = sessionID;
             this.canvasHeight = canvasHeight;
         }
+    }
+
+
+
+    @Data
+    public static class PointDTO {
+        public int x;
+        public int y;
+
+        public PointDTO() {}
+
+        public PointDTO(int x, int y) {
+            this.x = x;
+            this.y = y;
+        }
+
+    }
+
+    
+    public static enum StrokeType {
+        START,
+        DRAW,
+        END
     }
 }

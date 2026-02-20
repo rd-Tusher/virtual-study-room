@@ -28,11 +28,11 @@ public class CreateSessionService {
         Instant endTime = startTime.plusMillis(60*60*1000);
 
         SessionModel session = SessionModel.builder()
-                .hostID(UUID.randomUUID().toString().split("-")[0])  
+                .hostID(UUID.randomUUID().toString().split("-")[0])
                 .title(req.getTitle())
                 .startTime(startTime)
                 .endTime(endTime)
-                .joinCode(UUID.randomUUID().toString())             
+                .joinCode(UUID.randomUUID().toString())           
                 .mode(req.getMode())
                 .createdAt(Instant.now())
                 .build();

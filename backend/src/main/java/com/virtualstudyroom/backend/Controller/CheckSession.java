@@ -87,4 +87,10 @@ public class CheckSession {
         CanvasHeightDTO dto = new CanvasHeightDTO(sessionID, sessionID, height);
         seService.broadcastHeight(sessionID,dto);
     }
-} 
+
+    @PostMapping("/simulate/{sessionID}/whiteboard")
+    public void broadstroke(@PathVariable String sessionID,@RequestBody StrokeDTO strokeDTO){
+        System.out.println(sessionID);
+        seService.broadcastStroke(sessionID, strokeDTO);
+    }
+}

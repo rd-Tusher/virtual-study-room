@@ -18,6 +18,8 @@ import com.virtualStudyRoom.utils.ResponseModel.SessionResponse;
 
 public class MainFrame extends JFrame {
 
+    private static MainFrame mainFrame;
+
     public static final String LANDING = "LANDING";
     public static final String SESSION = "SESSION";
     public static final String CREATE_SESSION = "CREATE_SESSION";
@@ -30,7 +32,8 @@ public class MainFrame extends JFrame {
     private JPanel root;
     private JoinPage joinPage;
     private WaitingRoom waitingRoom;
-    public MainFrame() {
+    public MainFrame() { 
+        mainFrame = this;
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setMinimumSize(new Dimension(1200, 800));
@@ -85,5 +88,8 @@ public class MainFrame extends JFrame {
 
     public void joinSession() {
         cardLayout.show(root, JOIN_SESSION);
+    }
+    public static MainFrame getMainFrame(){
+        return mainFrame;
     }
 }

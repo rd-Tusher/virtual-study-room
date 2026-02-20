@@ -2,6 +2,10 @@ package com.virtualStudyRoom.components;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
+import java.awt.Cursor;
+import java.awt.FlowLayout;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 import javax.swing.BorderFactory;
 import javax.swing.Box;
@@ -9,6 +13,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JButton;
 import javax.swing.JPanel;
 import javax.swing.JTextField;
+
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
@@ -49,8 +54,29 @@ public class JoinPage extends JPanel{
         panel.add(sDialogue.createRow("Session ID : ","Enter session id",sessionID));
         panel.add(Box.createVerticalStrut(10));
 
-        JButton joinButton = new JButton("Join");
-        panel.add(joinButton);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 20 , 0));
+        buttonPanel.setOpaque(false);
+
+        JButton backHome = new JButton("Back to Home");
+        backHome.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        backHome.setBackground(new Color(220, 220, 220));
+        backHome.setFocusPainted(false);
+        backHome.setBorder(BorderFactory.createEmptyBorder(10, 16, 10, 16));
+
+        JButton joinButton = new JButton("Join Session");
+        joinButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        joinButton.setBackground(new Color(13, 110, 253));
+        joinButton.setForeground(Color.WHITE);
+        joinButton.setFocusPainted(false);
+        joinButton.setBorder(BorderFactory.createEmptyBorder(10, 16, 10, 16));
+
+        buttonPanel.add(backHome);
+        buttonPanel.add(joinButton);
+         
+        panel.add(buttonPanel);
+
+ 
 
         joinButton.addActionListener(e -> {
             String name = username.getText();
@@ -63,6 +89,16 @@ public class JoinPage extends JPanel{
                 System.out.println(mainRes.remainingSeconds);
                 sessionCheckModel = mainRes;
                 frame.showWaitingRoom(mainRes);
+            }
+        });
+
+        backHome.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e){
+                MainFrame frame = MainFrame.getMainFrame();
+                if(frame != null){
+                    frame.showLanding();
+                }
             }
         });
         return panel;
