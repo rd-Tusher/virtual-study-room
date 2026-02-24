@@ -23,16 +23,18 @@ public class WaitingRoom extends JPanel {
         if ("LIVE".equals(response.status)) {
             wsClient = new SessionWebSocketClient("ws://localhost:8080/session-websocket", response.sessionID,response.name,response.userID);
             SessionWebSocketClient.setInstance(wsClient);
+            // wsClient.setSessionPanel(frame.getPanel());
             showLiveSession(frame);
             System.out.println(response.sessionID);  
             UserPopupFactory.setSessionID(response.sessionID);
         } else {
             showNonLiveState(response);
-        }
+        } 
     }
 
     private void showLiveSession(MainFrame frame) {
         sessionPanel = new SessionPanel(frame);
+        wsClient.setSessionPanel(sessionPanel);
         wsClient.setWhiteboard(sessionPanel.getWhiteboard());
         add(sessionPanel, BorderLayout.CENTER);
 
@@ -47,7 +49,7 @@ public class WaitingRoom extends JPanel {
         if ("WAITING".equals(response.status)) {
             AnimatedTimerPanel timerPanel = new AnimatedTimerPanel(response);
             add(timerPanel,BorderLayout.CENTER);
-        } 
+        }
         else if ("ENDED".equals(response.status)) {
             add(new EndedPanel(), BorderLayout.CENTER);
         }

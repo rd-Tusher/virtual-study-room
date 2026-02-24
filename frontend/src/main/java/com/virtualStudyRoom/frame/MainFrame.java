@@ -30,6 +30,7 @@ public class MainFrame extends JFrame {
     private JPanel root;
     private JoinPage joinPage;
     private WaitingRoom waitingRoom;
+    private SessionPanel sessionPanel;
     public MainFrame() {
 
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -41,7 +42,7 @@ public class MainFrame extends JFrame {
         setContentPane(root);
 
         LandingPage landingPage = new LandingPage(this);
-        SessionPanel sessionPanel = new SessionPanel(this);
+        sessionPanel = new SessionPanel(this);
         CreateSessionDialog sDialogue = new CreateSessionDialog(this);
         joinPage = new JoinPage(this);
         
@@ -85,5 +86,9 @@ public class MainFrame extends JFrame {
 
     public void joinSession() {
         cardLayout.show(root, JOIN_SESSION);
+    }
+
+    public SessionPanel getPanel(){
+        return sessionPanel;
     }
 }

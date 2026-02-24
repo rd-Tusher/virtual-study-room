@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
 
+import com.virtualstudyroom.backend.Model.ScrollMessage;
 import com.virtualstudyroom.backend.Model.JoinedUserModel.CanvasHeightDTO;
 import com.virtualstudyroom.backend.Model.JoinedUserModel.StrokeDTO;
 
@@ -41,6 +42,12 @@ public class SessionEventService {
     public void broadcastHeight(String sessionID, CanvasHeightDTO dto){
         if(dto != null){
             messagingTemplate.convertAndSend("/topic/session/" + sessionID + "/whiteboard/resize",dto);
+        }
+    }
+
+    public void scrollCanvas(String sessionID, ScrollMessage scroll){
+        if (scroll != null) {
+            messagingTemplate.convertAndSend("/topic/session/" + sessionID + "/auto-scroll",scroll);
         }
     }
 }

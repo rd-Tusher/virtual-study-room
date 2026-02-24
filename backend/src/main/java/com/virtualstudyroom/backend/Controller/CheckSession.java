@@ -17,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.virtualstudyroom.backend.Model.ScrollMessage;
 import com.virtualstudyroom.backend.Model.JoinedUserModel.CanvasHeightDTO;
 import com.virtualstudyroom.backend.Model.JoinedUserModel.JoinReq;
 import com.virtualstudyroom.backend.Model.JoinedUserModel.StrokeDTO;
@@ -28,7 +29,6 @@ import com.virtualstudyroom.backend.Service.SessionTracker;
 @RestController
 @RequestMapping("/api/session")
 public class CheckSession {
-
 
     @Autowired
     private CheckSessionService chkService;
@@ -87,4 +87,15 @@ public class CheckSession {
         CanvasHeightDTO dto = new CanvasHeightDTO(sessionID, sessionID, height);
         seService.broadcastHeight(sessionID,dto);
     }
-} 
+
+    @MessageMapping("/session/{sessionID}/canvas-scroll")
+    public void broadcastScrolling(@DestinationVariable String sessionID,ScrollMessage scroll ){
+        seService.scrollCanvas(sessionID, scroll);
+    }
+
+    @PostMapping("/scroll/{sessionID}")
+    public ResponseEntity<String> testScroll (@PathVariable String sessionID, @RequestBody ScrollMessage scroll){
+        seService.scrollCanvas(sessionID, scroll);
+        return ResponseEntity.ok().build();
+    }
+}

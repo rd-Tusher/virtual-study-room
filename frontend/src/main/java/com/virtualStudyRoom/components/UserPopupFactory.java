@@ -31,7 +31,7 @@ public class UserPopupFactory {
         overlay.add(popup);
 
         // Grid panel for users
-        JPanel gridPanel = new JPanel(new GridLayout(0, 4, 10, 10));
+        JPanel gridPanel = new JPanel(new GridLayout(0, 3, 10, 10));
         gridPanel.setBackground(new Color(50, 50, 50));
 
         users = SessionWebSocketClient.getUsers(sessionID);

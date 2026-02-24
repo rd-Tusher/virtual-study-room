@@ -31,6 +31,8 @@ public class SessionWebSocketClient {
     protected String name;
     protected StompSession stompSession;
 
+    private SessionPanel sPanel;
+
     private Whiteboard whiteboard;
 
 
@@ -60,6 +62,7 @@ public class SessionWebSocketClient {
                 session.subscribe("/topic/session/" + sessionID, new SessionEventHandler());
                 session.subscribe("/topic/session/" + sessionID + "/whiteboard", new WhiteboardEventHandler());
                 session.subscribe("/topic/session/" + sessionID + "/whiteboard/resize", new WhiteboardHeightHandler());
+                session.subscribe("/topic/session/" + sessionID + "/auto-scroll", new ScrollHandler());
 
                 System.out.println("Subscribed to /topic/session/" + sessionID);
 
@@ -200,7 +203,6 @@ public class SessionWebSocketClient {
         stompSession.send("/topic/session/" + sessionID + "/whiteboard/resize",dto);
     }
 
-
     private class WhiteboardHeightHandler implements StompFrameHandler {
 
         @Override
@@ -228,6 +230,48 @@ public class SessionWebSocketClient {
         }
     }
 
+
+    public void sendScroll(ScrollMessage scroll){
+        if (!connected || stompSession == null) return;
+
+        scroll.senderID = userID;
+        stompSession.send("/topic/session/" + sessionID + "/auto-scroll",scroll);
+    }
+
+    private class ScrollHandler implements StompFrameHandler {
+
+        @Override
+        @NonNull
+        public Type getPayloadType(@NonNull StompHeaders headers) {
+            return ScrollMessage.class;
+        }
+
+        @Override
+        public void handleFrame(@NonNull StompHeaders headers, @Nullable Object payload) {
+
+                if (!(payload instanceof ScrollMessage scrollMessage)) {
+                    return;
+                }
+
+                // Ignore your own scroll message
+                if (userID != null && userID.equals(scrollMessage.senderID)) {
+                    return;
+                }
+
+                System.out.println("Received scroll from user: " + scrollMessage.senderID+ " percent: "+ scrollMessage.verticalPercent);
+
+                if (scrollMessage != null) {
+                    SwingUtilities.invokeLater(() -> {
+                        sPanel.applyRemoteScroll(scrollMessage.verticalPercent);
+                    });
+                }
+            }
+    }
+
+
+
+
+
     public String getSessionID(){
         return sessionID;
     }
@@ -243,6 +287,10 @@ public class SessionWebSocketClient {
 
     public void setWhiteboard(Whiteboard whiteboard){
         this.whiteboard = whiteboard;
+    }
+
+    public void setSessionPanel(SessionPanel sPanel){
+        this.sPanel = sPanel;
     }
 
     private static class SessionEvent {

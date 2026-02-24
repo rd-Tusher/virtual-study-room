@@ -20,6 +20,7 @@ public class Whiteboard extends JPanel {
     private float strokeSize = 3f;
 
     private final JFrame parentFrame;
+    private SessionPanel sPanel;
 
     public static class Stroke {
         Color color;
@@ -32,13 +33,14 @@ public class Whiteboard extends JPanel {
             this.strokeSize = strokeSize;
             this.points = new ArrayList<>();
         }
-    }
+    } 
 
     private final List<Stroke> strokes = new ArrayList<>();
     private Stroke currentStroke = null;
 
-    public  Whiteboard(JFrame frame) {
+    public  Whiteboard(JFrame frame,SessionPanel sPanel) {
         this.parentFrame = frame;
+        this.sPanel = sPanel;
 
         setBackground(Color.BLACK);
         setOpaque(true);
@@ -98,7 +100,7 @@ public class Whiteboard extends JPanel {
                 updatePanelSize();
                 repaint();
             }
-        });
+        }); 
     }
 
     public void growCanvas(int growBy) {
@@ -109,6 +111,8 @@ public class Whiteboard extends JPanel {
     private void updatePanelSize() {
         setPreferredSize(new Dimension(canvasWidth, canvasHeight));
         revalidate();
+        repaint();
+        // sPanel.refresh();
     }
 
     @Override
@@ -179,6 +183,7 @@ public class Whiteboard extends JPanel {
     public Color getPenColor() {
         return this.penColor;
     }
+
 
     public void undo() {
         if (!strokes.isEmpty()) {

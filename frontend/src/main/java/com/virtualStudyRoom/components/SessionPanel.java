@@ -15,20 +15,40 @@ public class SessionPanel extends JPanel {
     private JPanel userOverlay;
 
 
+
+    private boolean isRemoteScroll = false;
+    private double lastSendPercent = -1;
+
+
     public SessionPanel(JFrame frame) {
         setLayout(new BorderLayout());
 
+        
         layeredPane = new JLayeredPane();
         layeredPane.setLayout(null);
         add(layeredPane, BorderLayout.CENTER);
 
-        whiteboard = new Whiteboard(frame);
+        whiteboard = new Whiteboard(frame, this);
         whiteboard.setDoubleBuffered(true);
 
         scrollPane = new JScrollPane(whiteboard);
+
+
+
+
+        scrollPane.getVerticalScrollBar().addAdjustmentListener(e -> {
+
+            if (isRemoteScroll) return;
+
+            if (!e.getValueIsAdjusting()) {
+                sendScrollPosition();
+            }
+        });
+
+
         
-        scrollPane.getHorizontalScrollBar().setPreferredSize(new Dimension(0, 0));
-        scrollPane.getVerticalScrollBar().setPreferredSize(new Dimension(0, 0));
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
         scrollPane.getVerticalScrollBar().setUnitIncrement(40);
         layeredPane.add(scrollPane, JLayeredPane.DEFAULT_LAYER);
 
@@ -80,30 +100,89 @@ public class SessionPanel extends JPanel {
     
 
 
-public void showUserPopup() {
-    if (userOverlay != null) return;
+    public void showUserPopup() {
+        if (userOverlay != null) return;
 
-    userOverlay = UserPopupFactory.createOverlay(
-            this::hideUserPopup,   // 🔥 callback
-            getSize()
-    );
+        userOverlay = UserPopupFactory.createOverlay(
+                this::hideUserPopup,
+                getSize()
+        );
 
-    layeredPane.add(userOverlay, JLayeredPane.MODAL_LAYER);
-    layeredPane.repaint();
-}
-
-
-public void hideUserPopup() {
-    if (userOverlay != null) {
-        layeredPane.remove(userOverlay);
-        userOverlay = null;
-        layeredPane.revalidate();
+        layeredPane.add(userOverlay, JLayeredPane.MODAL_LAYER);
         layeredPane.repaint();
     }
-}
 
-public Whiteboard getWhiteboard(){
-    return whiteboard;
-}
+
+    public void hideUserPopup() {
+        if (userOverlay != null) {
+            layeredPane.remove(userOverlay);
+            userOverlay = null;
+            layeredPane.revalidate();
+            layeredPane.repaint();
+        }
+    }
+
+    public Whiteboard getWhiteboard(){
+        return whiteboard;
+    }
+
+
+
+    // addedd later
+
+    private void sendScrollPosition() {
+
+        JScrollBar bar = scrollPane.getVerticalScrollBar();
+
+        int max = bar.getMaximum() - bar.getVisibleAmount();
+        if (max <= 0) return;
+
+        double percent = bar.getValue() / (double) max;
+
+        if(Math.abs(percent - lastSendPercent) < 0.01){
+            return;
+        }
+
+        lastSendPercent = percent;
+
+        SessionWebSocketClient client = SessionWebSocketClient.getInstance();
+        if (client != null) {
+            client.sendScroll(new ScrollMessage(lastSendPercent));
+        }
+    }
+
+
+    public void applyRemoteScroll(double percent) {
+
+        if (scrollPane == null) {
+            System.out.println("ScrollPane not ready yet");
+            return;
+        }
+        
+        JScrollBar bar = scrollPane.getVerticalScrollBar();
+
+        int max = bar.getMaximum() - bar.getVisibleAmount();
+
+        if (max <= 0) return;
+
+        int newValue = (int) (percent * max);
+
+        isRemoteScroll = true;
+        bar.setValue(newValue);
+        isRemoteScroll = false;
+
+    }
+
+    public  void refresh(){
+        if (scrollPane != null) {
+            scrollPane.revalidate();
+            scrollPane.repaint();
+        }
+
+        if (layeredPane != null) {
+            layeredPane.revalidate();
+            layeredPane.repaint();
+        }
+    }
 
 }
