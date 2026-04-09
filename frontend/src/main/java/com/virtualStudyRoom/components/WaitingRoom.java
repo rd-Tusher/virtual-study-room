@@ -7,25 +7,24 @@ import javax.swing.JPanel;
 import com.virtualStudyRoom.frame.MainFrame;
 import com.virtualStudyRoom.utils.AnimatedTimerPanel;
 import com.virtualStudyRoom.utils.EndedPanel;
-import com.virtualStudyRoom.utils.ResponseModel.SessionCheckModel;
+import com.virtualStudyRoom.utils.ResponseModel.JoinSessionResponse;
 
 public class WaitingRoom extends JPanel {
 
     private LandingPage landingPage = new LandingPage();
-    private SessionPanel sessionPanel;
+    private static SessionPanel sessionPanel;
     protected SessionWebSocketClient wsClient;
 
-    public WaitingRoom(SessionCheckModel response, MainFrame frame) {
+
+    public WaitingRoom(JoinSessionResponse response, MainFrame frame) {
         setLayout(new BorderLayout());
         setBackground(Color.BLACK);
-
 
         if ("LIVE".equals(response.status)) {
             wsClient = new SessionWebSocketClient("ws://localhost:8080/session-websocket", response.sessionID,response.name,response.userID);
             SessionWebSocketClient.setInstance(wsClient);
-            // wsClient.setSessionPanel(frame.getPanel());
+            JcefEngine.initRTC(response.userID, response.sessionID);
             showLiveSession(frame);
-            System.out.println(response.sessionID);  
             UserPopupFactory.setSessionID(response.sessionID);
         } else {
             showNonLiveState(response);
@@ -42,7 +41,7 @@ public class WaitingRoom extends JPanel {
         repaint();
     }
  
-    private void showNonLiveState(SessionCheckModel response) {
+    private void showNonLiveState(JoinSessionResponse response) {
 
         add(landingPage.header(), BorderLayout.NORTH);
 
@@ -53,5 +52,9 @@ public class WaitingRoom extends JPanel {
         else if ("ENDED".equals(response.status)) {
             add(new EndedPanel(), BorderLayout.CENTER);
         }
+    }
+
+    public static SessionPanel getSesionPanel(){
+        return sessionPanel;
     }
 }

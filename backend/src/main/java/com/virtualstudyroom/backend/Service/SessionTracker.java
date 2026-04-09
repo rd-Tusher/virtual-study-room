@@ -41,7 +41,7 @@ public class SessionTracker {
     public boolean isUserActive(String sessionID, String userID) {
         Set<User> users = activeUsers.get(sessionID);
         if (users == null) {
-            return false;
+            return false; 
         }
         // return users.stre(sessionID, Set.of()).contains(userID);
         return users.stream().anyMatch(user -> user.getUserID().equals(userID));

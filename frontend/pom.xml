@@ -92,6 +92,25 @@
         <version>5.10.0</version>
         <scope>test</scope>
     </dependency>
+    <dependency>
+        <groupId>me.friwi</groupId>
+        <artifactId>jcefmaven</artifactId>
+        <version>143.0.14</version>
+    </dependency>
+    <!-- Add to your pom.xml -->
+<!-- PDFBox 3.x -->
+<dependency>
+    <groupId>org.apache.pdfbox</groupId>
+    <artifactId>pdfbox</artifactId>
+    <version>3.0.0</version>
+</dependency>
+
+<!-- RSyntaxTextArea for code files -->
+<dependency>
+    <groupId>com.fifesoft</groupId>
+    <artifactId>rsyntaxtextarea</artifactId>
+    <version>3.3.3</version>
+</dependency>
 
 </dependencies>
 

@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.virtualStudyRoom.frame.MainFrame;
 import com.virtualStudyRoom.utils.DTFormatter;
+import com.virtualStudyRoom.utils.ValidatorUtil;
 import com.virtualStudyRoom.utils.ResponseModel.SessionResponse;
 
 import javax.swing.*;
@@ -19,9 +20,11 @@ public class CreateSessionDialog extends JPanel {
     private JTextField maxTimeField;
     private JRadioButton audioOnly;
     private JRadioButton audioWhiteboard;
+    private static CreateSessionDialog sDialog;
 
     private LandingPage landingPage = new LandingPage();
     public CreateSessionDialog(MainFrame frame) {
+        sDialog = this;
         setLayout(new BorderLayout());
         setBackground(Color.white);
         setBorder(BorderFactory.createEmptyBorder(20, 20, 20, 20));
@@ -60,8 +63,8 @@ public class CreateSessionDialog extends JPanel {
     panel.add(Box.createVerticalStrut(10));
 
     
-    panel.add(createRow("Max allowed time : ","Max allowed time",maxTimeField));
-    panel.add(Box.createVerticalStrut(10));
+    // panel.add(createRow("Max allowed time : ","Max allowed time",maxTimeField));
+    // panel.add(Box.createVerticalStrut(10));
 
     
     audioOnly = new JRadioButton("Audio Only");
@@ -116,13 +119,24 @@ public class CreateSessionDialog extends JPanel {
         
         create.addActionListener(e -> {
             String title = sessionTitleField.getText().trim();
+            if (!ValidatorUtil.checkTtitle(sessionTitleField)) {
+                return;
+            }
             String date = sessionDateField.getText().trim();
 
+            if (!ValidatorUtil.checkDate(sessionDateField)) {
+                return;
+            }
+
             String time = sessionTimeField.getText().trim();
+            if (!ValidatorUtil.checkTime(sessionTimeField)) {
+                return;
+            }
             Instant newTime = DTFormatter.convertToUTC(time,date);
             if(newTime == null){
                 return;
             }
+
             String mode = audioOnly.isSelected() ? "single" : "dual";
             
             String response = FrontendToBackend.sendSessionData(title, date, newTime, mode);
@@ -136,12 +150,16 @@ public class CreateSessionDialog extends JPanel {
             System.out.println("The response from backend  :  " + jsonResponse.joinCode);
         });
 
+        cancel.addActionListener(e -> {
+            frame.showLanding();
+        });
+
         return panel;
-    } 
+    }      
 
 
 
-    public JPanel createRow(String labelText,String tootTip,JTextField inputField) {
+    public static JPanel createRow(String labelText,String tootTip,JTextField inputField) {
         JPanel row = new JPanel(new GridBagLayout());
 
         row.setOpaque(false);
@@ -216,5 +234,9 @@ public class CreateSessionDialog extends JPanel {
         row.add(optionPanel, c);
 
         return row;
-    }   
+    }
+
+    public static CreateSessionDialog getSessionDialog(){
+        return sDialog;
+    }
 }

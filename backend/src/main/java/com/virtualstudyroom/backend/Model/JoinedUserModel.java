@@ -1,7 +1,6 @@
 package com.virtualstudyroom.backend.Model;
 
 import java.time.Instant;
-import java.util.List;
 
 // package com.virtualstudyroom.backend.Model;
 
@@ -40,33 +39,6 @@ public class JoinedUserModel {
         public User(String name, String userID){
             this.name = name;
             this.userID = userID;
-        }
-    }
-
-    @Data
-    public static class Point {
-        private int x;
-        private int y;
-
-        public Point(){}
-        public Point(int x, int y){
-            this.x = x;
-            this.y = y;
-        }
-    }
-
-
-    @Data 
-    public static class StrokeDTO{
-        private String senderID;
-        private String color;
-        private float strokeSize;
-        private List<Point> points;
-
-        public StrokeDTO(String color, float strokeSize, List<Point> points){
-            this.color = color;
-            this.points = points;
-            this.strokeSize = strokeSize;
         }
     }
 

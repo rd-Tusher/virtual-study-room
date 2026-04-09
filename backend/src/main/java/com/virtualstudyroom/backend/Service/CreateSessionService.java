@@ -1,5 +1,6 @@
 package com.virtualstudyroom.backend.Service;
 
+
 import java.time.Instant;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -32,7 +33,7 @@ public class CreateSessionService {
                 .title(req.getTitle())
                 .startTime(startTime)
                 .endTime(endTime)
-                .joinCode(UUID.randomUUID().toString())             
+                .joinCode(UUID.randomUUID().toString())
                 .mode(req.getMode())
                 .createdAt(Instant.now())
                 .build();
@@ -41,11 +42,11 @@ public class CreateSessionService {
             return CompletableFuture.completedFuture(ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Failed to save session info. Session not created"));
         }
         SessionModel savedSession = mongoTemplate.save(session);
-            // System.out.println(UUID.randomUUID().toString());
         
         Response response = Response.builder()
         .joinCode(savedSession.getJoinCode())
         .build();
         return CompletableFuture.completedFuture(ResponseEntity.ok(response));
     }
+
 }

@@ -3,6 +3,9 @@ package com.virtualstudyroom.backend.Controller;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -15,13 +18,18 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import com.virtualstudyroom.backend.Model.LateUserInfo;
 import com.virtualstudyroom.backend.Model.ScrollMessage;
 import com.virtualstudyroom.backend.Model.JoinedUserModel.CanvasHeightDTO;
 import com.virtualstudyroom.backend.Model.JoinedUserModel.JoinReq;
-import com.virtualstudyroom.backend.Model.JoinedUserModel.StrokeDTO;
+// import com.virtualstudyroom.backend.Model.JoinedUserModel.StrokeDTO;
 import com.virtualstudyroom.backend.Model.JoinedUserModel.User;
+import com.virtualstudyroom.backend.Model.SessionModel.FileUploadNotification;
+import com.virtualstudyroom.backend.Model.StrokeDTO;
 import com.virtualstudyroom.backend.Service.CheckSessionService;
 import com.virtualstudyroom.backend.Service.SessionEventService;
 import com.virtualstudyroom.backend.Service.SessionTracker;
@@ -37,9 +45,13 @@ public class CheckSession {
     @Autowired
     private SessionEventService seService;
 
+    private ConcurrentMap<String, LateUserInfo> lateUserInfo = new ConcurrentHashMap<>();
+
     @GetMapping("/{name}/{sessionID}")
     public CompletableFuture<ResponseEntity<?>> checkSession(@PathVariable String name,@PathVariable String sessionID) {
-        return chkService.checkSession(name,sessionID)
+        System.out.println("trying to login");
+        System.out.println(lateUserInfo.size());
+        return chkService.checkSession(name,sessionID,lateUserInfo.get(sessionID))
                 .handle((result, ex) -> {
                     if (ex != null) {
                         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -73,11 +85,24 @@ public class CheckSession {
 
     @MessageMapping("/session/{sessionID}/whiteboard")
     public void broadcastStroke(@DestinationVariable String sessionID, StrokeDTO strokeDTO){
+        System.out.println("entered into broadcasting storke");
+        lateUserInfo.computeIfAbsent(sessionID, key -> LateUserInfo.builder().strokeDTO(new CopyOnWriteArrayList<>()).build()).getStrokeDTO().add(strokeDTO);
         seService.broadcastStroke(sessionID, strokeDTO);
     }
-
+ 
     @MessageMapping("/session/{sessionID}/whiteboard/resize")
     public void receiveCanvasResize(@DestinationVariable String sessionID, CanvasHeightDTO dto){
+        System.out.println("entered into canvas height");
+        lateUserInfo.compute(sessionID, (key, existing) -> {
+            if (existing == null) {
+                return LateUserInfo.builder().canvasHeight(dto.getCanvasHeight()).build();
+            }
+            if (dto.getCanvasHeight() > existing.getCanvasHeight()) {
+                existing.setCanvasHeight(dto.getCanvasHeight());
+            }
+            return existing;
+        });
+ 
         seService.broadcastHeight(sessionID, dto);
     }
 
@@ -88,14 +113,51 @@ public class CheckSession {
         seService.broadcastHeight(sessionID,dto);
     }
 
-    @MessageMapping("/session/{sessionID}/canvas-scroll")
+    @MessageMapping("/session/{sessionID}/remote-scroll")
     public void broadcastScrolling(@DestinationVariable String sessionID,ScrollMessage scroll ){
+        System.out.println("percentage : " + scroll.getVerticalPercent());
+        Double p = Double.parseDouble(scroll.getVerticalPercent());
+        lateUserInfo.compute(sessionID, (key, existing) -> {
+            if (existing == null) {
+                return LateUserInfo.builder().verticalPercentage(p).build();
+            }
+            else {
+                existing.setVerticalPercentage(p);
+                return existing;
+            }
+        });
         seService.scrollCanvas(sessionID, scroll);
     }
 
     @PostMapping("/scroll/{sessionID}")
     public ResponseEntity<String> testScroll (@PathVariable String sessionID, @RequestBody ScrollMessage scroll){
         seService.scrollCanvas(sessionID, scroll);
-        return ResponseEntity.ok().build();
+        return ResponseEntity.ok().build(); 
     }
+    
+    @MessageMapping("/session/{sessionID}/webrtc")
+    public void handleSignal(@DestinationVariable String sessionID, String message){
+        System.out.println("entered into the backend.");
+        seService.handleSingnal(sessionID, message);
+    }
+
+    @PostMapping("/{sessionID}/uploadFile")
+    public CompletableFuture<ResponseEntity<String>> uploadFiles(
+            @PathVariable String sessionID,
+            @RequestParam("files") MultipartFile[] files,
+            @RequestParam("userID") String userID) {
+
+        return chkService.uploadFiles(files, sessionID)
+                .thenApply(result -> {
+                    seService.handleFileNotification(sessionID, new FileUploadNotification(sessionID, "Some one has uploaded some files",userID));
+                    return ResponseEntity.ok(result);
+                })
+                .exceptionally(ex -> {
+                    ex.printStackTrace();
+                    return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                            .body("Failed to upload files");
+                });
+    }
+
+    
 }

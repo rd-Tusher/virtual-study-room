@@ -52,7 +52,7 @@ public class LandingPage extends JPanel {
 
     private JPanel actionButtons() {
         JPanel panel = new JPanel();
-        panel.setLayout(new GridLayout(2, 1, 0, 15));
+        panel.setLayout(new GridLayout(3, 1, 0, 15));
         panel.setOpaque(false);
         panel.setMaximumSize(new Dimension(300, 120));
 
@@ -60,9 +60,12 @@ public class LandingPage extends JPanel {
         createBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         JButton joinBtn = new JButton("Join with Session ID");
         joinBtn.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        JButton resourceButton = new JButton("Resources");
+        resourceButton.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
 
         stylePrimaryButton(createBtn);
         styleSecondaryButton(joinBtn);
+        stylePrimaryButton(resourceButton);
 
         createBtn.addActionListener(e -> {
                 frame.createSession();
@@ -72,8 +75,13 @@ public class LandingPage extends JPanel {
             frame.joinSession();
         });
 
+        resourceButton.addActionListener(e -> {
+            frame.showFileInput();
+        });
+
         panel.add(createBtn);
         panel.add(joinBtn);
+        panel.add(resourceButton);
 
         return panel;
     }

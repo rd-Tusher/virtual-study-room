@@ -2,6 +2,7 @@ package com.virtualStudyRoom.components;
 
 import com.virtualStudyRoom.components.BackendToFrontend.User;
 import com.virtualStudyRoom.components.Whiteboard.CanvasResizeDTO;
+import com.virtualStudyRoom.utils.ResponseModel.FileUploadNotification;
 
 import org.springframework.messaging.simp.stomp.*;
 import org.springframework.web.socket.client.standard.StandardWebSocketClient;
@@ -41,13 +42,16 @@ public class SessionWebSocketClient {
         this.userID = userID;
         this.name = name;
 
-        WebSocketStompClient stompClient =
-                new WebSocketStompClient(new StandardWebSocketClient());
+        if (websocketUrl == null) {
+            System.out.println("The required websocket is null.");
+            return;
+        }
+
+        WebSocketStompClient stompClient = new WebSocketStompClient(new StandardWebSocketClient());
 
         stompClient.setMessageConverter(new MappingJackson2MessageConverter());
 
         System.out.println("Connecting to WebSocket: " + websocketUrl);
-
 
         stompClient.connectAsync(websocketUrl, new StompSessionHandlerAdapter() {
 
@@ -63,8 +67,9 @@ public class SessionWebSocketClient {
                 session.subscribe("/topic/session/" + sessionID + "/whiteboard", new WhiteboardEventHandler());
                 session.subscribe("/topic/session/" + sessionID + "/whiteboard/resize", new WhiteboardHeightHandler());
                 session.subscribe("/topic/session/" + sessionID + "/auto-scroll", new ScrollHandler());
-
-                System.out.println("Subscribed to /topic/session/" + sessionID);
+                session.subscribe("/topic/session/" + sessionID + "/webrtc", new WebRTCEventHandler());
+                session.subscribe("/topic/session/" + sessionID + "/notification", new FileUploadHandler());
+                session.subscribe("/topic/session/" + sessionID + "/info-to-late-user", new LateUserInfoHandler());
 
                 Set<User> users = FrontendToBackend.joinSession(sessionID, name, userID);
                 for (User user : users) {
@@ -151,15 +156,14 @@ public class SessionWebSocketClient {
     }
 
 
-
-
     public void sendStroke(StrokeDTO stroke) {
         if (!connected || stompSession == null || stroke == null) return;
 
         stroke.senderID = userID;
-        stompSession.send("/topic/session/" + sessionID + "/whiteboard", stroke);
+        stompSession.send("/app/session/" + sessionID + "/whiteboard", stroke);
     }
-
+    
+    // stompSession.send("/topic/session/" + sessionID + "/whiteboard", stroke);
     private class WhiteboardEventHandler implements StompFrameHandler {
 
         @Override
@@ -199,8 +203,9 @@ public class SessionWebSocketClient {
         CanvasResizeDTO dto = new CanvasResizeDTO();
         dto.canvasHeight = newHeight;
         dto.senderID = userID;
-
-        stompSession.send("/topic/session/" + sessionID + "/whiteboard/resize",dto);
+ 
+        // stompSession.send("/topic/session/" + sessionID + "/whiteboard/resize",dto);
+        stompSession.send("/app/session/" + sessionID + "/whiteboard/resize",dto);
     }
 
     private class WhiteboardHeightHandler implements StompFrameHandler {
@@ -222,11 +227,11 @@ public class SessionWebSocketClient {
                 return;
             }
 
-                System.out.println("Received canvas resize from user: " + resizeDTO.senderID + " new height: " + resizeDTO.canvasHeight);
+            System.out.println("Received canvas resize from user: " + resizeDTO.senderID + " new height: " + resizeDTO.canvasHeight);
 
-                SwingUtilities.invokeLater(() -> {
-                    whiteboard.growCanvas(resizeDTO.canvasHeight);
-                });
+            SwingUtilities.invokeLater(() -> {
+                whiteboard.growCanvas(resizeDTO.canvasHeight);
+            });
         }
     }
 
@@ -235,7 +240,8 @@ public class SessionWebSocketClient {
         if (!connected || stompSession == null) return;
 
         scroll.senderID = userID;
-        stompSession.send("/topic/session/" + sessionID + "/auto-scroll",scroll);
+        // stompSession.send("/topic/session/" + sessionID + "/auto-scroll",scroll);
+        stompSession.send("/app/session/" + sessionID + "/remote-scroll",scroll);
     }
 
     private class ScrollHandler implements StompFrameHandler {
@@ -249,34 +255,108 @@ public class SessionWebSocketClient {
         @Override
         public void handleFrame(@NonNull StompHeaders headers, @Nullable Object payload) {
 
-                if (!(payload instanceof ScrollMessage scrollMessage)) {
-                    return;
-                }
-
-                // Ignore your own scroll message
-                if (userID != null && userID.equals(scrollMessage.senderID)) {
-                    return;
-                }
-
-                System.out.println("Received scroll from user: " + scrollMessage.senderID+ " percent: "+ scrollMessage.verticalPercent);
-
-                if (scrollMessage != null) {
-                    SwingUtilities.invokeLater(() -> {
-                        sPanel.applyRemoteScroll(scrollMessage.verticalPercent);
-                    });
-                }
+            if (!(payload instanceof ScrollMessage scrollMessage)) {
+                return;
             }
+
+            if (userID != null && userID.equals(scrollMessage.senderID)) {
+                return;
+            }
+
+            System.out.println("Received scroll from user: " + scrollMessage.senderID+ " percent: "+ scrollMessage.verticalPercent);
+
+            if (scrollMessage != null) {
+                SwingUtilities.invokeLater(() -> {
+                    sPanel.applyRemoteScroll(scrollMessage.verticalPercent);
+                });
+            }
+        }
     }
 
+    public void sendWebRTCSignal(String json) {
+        if (!connected || stompSession == null || json == null) return;
+        stompSession.send("/topic/session/" + sessionID + "/webrtc", json);
+    }
 
+    private class WebRTCEventHandler   implements StompFrameHandler {
 
+        @Override
+        @NonNull
+        public Type getPayloadType(@NonNull StompHeaders headers) {
+            return String.class;
+        }
+
+        @Override
+        public void handleFrame(@NonNull StompHeaders headers,@Nullable Object payload) {
+            String json = (String) payload;
+            SessionPanel.getJcefEngine().sendSignalToJS(json);
+        }
+    }
+
+    private class FileUploadHandler implements StompFrameHandler {
+        @Override
+        @NonNull
+        public Type getPayloadType (@NonNull StompHeaders headers) {
+            return FileUploadNotification.class;
+        }
+
+ 
+        @Override
+        public void handleFrame(@NonNull StompHeaders headers, @Nullable Object payload) {
+
+            if (!(payload instanceof FileUploadNotification fileUploadNotification)) {
+                return;
+            }
+
+            if (userID != null && userID.equals(fileUploadNotification.userID)) {
+                return;
+            }
+
+            if (fileUploadNotification != null) {
+                SwingUtilities.invokeLater(() -> {
+                    WaitingRoom.getSesionPanel().showFileNotification(fileUploadNotification);
+                });
+            }
+        }
+    }
+
+    private class LateUserInfoHandler implements StompFrameHandler {
+
+        @Override
+        @NonNull
+        public Type getPayloadType(@NonNull StompHeaders headers) {
+            System.out.println("Entered getPayloadType for late user info");
+            return LateUserInfo.class;  // now deserialization will work
+        }
+
+        @Override
+        public void handleFrame(@NonNull StompHeaders headers, @Nullable Object payload) {
+            System.out.println("Entered handleFrame for late user info");
+
+            if (!(payload instanceof LateUserInfo lateUserInfo)) {
+                System.out.println("Payload is not of type LateUserInfo");
+                return;
+            }
+
+            System.out.println("LateUserInfo received for userID: " + lateUserInfo.getUserID());
+            System.out.println("user id : " + userID);
+            if (userID != null && userID.equals(lateUserInfo.getUserID())) {
+
+                SwingUtilities.invokeLater(() -> {
+                    System.out.println("new height : " + lateUserInfo.getCanvasHeight());
+                    whiteboard.growCanvas(lateUserInfo.getCanvasHeight());
+                    sPanel.applyRemoteScroll( lateUserInfo.getVerticalPercentage());
+                });
+            }
+
+        }
+    }
 
 
     public String getSessionID(){
         return sessionID;
     }
 
-    
     public static void setInstance(SessionWebSocketClient client) {
         instance = client;
     }
@@ -298,6 +378,4 @@ public class SessionWebSocketClient {
         public String userID;
         public String name;
     }
-
-    
 }

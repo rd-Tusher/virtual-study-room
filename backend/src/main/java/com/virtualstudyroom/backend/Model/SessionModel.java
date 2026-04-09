@@ -44,4 +44,19 @@ public class SessionModel{
         private String joinCode;
         // private String QRCode;
     }
+
+
+    @Data
+    @Builder
+    public static class FileUploadNotification{
+        private String sessionID;
+        private String message;
+        private String userID;
+
+        public FileUploadNotification(String sessionID, String message,String userID){
+            this.sessionID = sessionID;
+            this.message = message;
+            this.userID = userID;
+        }
+    }
 }

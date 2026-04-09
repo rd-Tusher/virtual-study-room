@@ -1,5 +1,6 @@
 package com.virtualStudyRoom.components;
 
+import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
 import java.net.URI;
@@ -11,12 +12,13 @@ import javax.swing.SwingUtilities;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.virtualStudyRoom.utils.ResponseModel.FileRes;
 
 
 public class BackendToFrontend {
 
     private static final String BASE_URL = "http://localhost:8080";
-    private final Gson gson = new Gson();
+    private static final Gson gson = new Gson();
 
     private final Map<String, List<User>> sessionUserCache = new HashMap<>();
 
@@ -66,6 +68,39 @@ public class BackendToFrontend {
             users.removeIf(u -> u.getUserID().equals(userID));
         }
     }
+
+    public static FileRes getSesisonFile(String sessionID){
+        try {
+            String endpoint = BASE_URL + "/files/get/" + sessionID;
+            URL url = new URI(endpoint).toURL();
+            
+            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+            connection.setRequestMethod("GET");
+            connection.setConnectTimeout(5000);
+            connection.setReadTimeout(5000);
+
+            if (connection.getResponseCode() == 200) {
+
+                BufferedReader in = new BufferedReader(new InputStreamReader(connection.getInputStream()));
+                String inputLine;
+                StringBuilder response = new StringBuilder();
+
+                while ((inputLine = in.readLine()) != null) {
+                    response.append(inputLine);
+                }
+                in.close();
+
+                FileRes files = gson.fromJson(response.toString(), new TypeToken<FileRes>(){}.getType());
+                return files;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+
+    }
+
+
 
     public static class User {
     private String userID;

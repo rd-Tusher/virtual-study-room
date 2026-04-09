@@ -1,6 +1,10 @@
 package com.virtualStudyRoom.components;
 
 import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -11,6 +15,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Set;
+import java.util.UUID;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -183,5 +188,87 @@ public class FrontendToBackend {
                 conn.disconnect();
             }
         }
+    }
+
+    public static void sendFile(String sessionID, String userID, File[] files){
+        HttpURLConnection conn = null;
+        DataOutputStream dos = null;
+
+        try {
+            String boundary = UUID.randomUUID().toString();
+            String lineEnd = "\r\n";
+            String twoHyphens = "--";
+
+            String urlStr = baseUrl + "/api/session/" + sessionID + "/uploadFile";
+            URL url = new URI(urlStr).toURL();
+
+            conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("POST");
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(5000);
+            conn.setDoOutput(true);
+            
+            // ✅ FIXED HEADER
+            conn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + boundary);
+
+            dos = new DataOutputStream(conn.getOutputStream());
+
+            System.out.println("user id  ; " + userID);
+            writeFormField(dos, boundary, "userID", userID);
+
+            // 🔹 Send all files
+            for (File file : files) {
+                writeFile(dos, boundary, file);
+            }
+
+            // 🔹 End request
+            dos.writeBytes(twoHyphens + boundary + twoHyphens + lineEnd);
+            dos.flush();
+            dos.close();
+
+            int responseCode = conn.getResponseCode();
+            System.out.println("Response Code: " + responseCode);
+
+            if (responseCode == 200) {
+                System.out.println("Upload successful!");
+            } else {
+                System.out.println("Upload failed!");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private static void writeFormField(DataOutputStream dos, String boundary, String name, String value) throws IOException {
+        String lineEnd = "\r\n";
+        String twoHyphens = "--";
+
+        dos.writeBytes(twoHyphens + boundary + lineEnd);
+        dos.writeBytes("Content-Disposition: form-data; name=\"" + name + "\"" + lineEnd);
+        dos.writeBytes(lineEnd);
+        dos.writeBytes(value + lineEnd);
+    }
+
+    private static void writeFile(DataOutputStream dos, String boundary, File file) throws IOException {
+        String lineEnd = "\r\n";
+        String twoHyphens = "--";
+
+        FileInputStream fis = new FileInputStream(file);
+
+        dos.writeBytes(twoHyphens + boundary + lineEnd);
+        dos.writeBytes("Content-Disposition: form-data; name=\"files\"; filename=\"" + file.getName() + "\"" + lineEnd);
+        dos.writeBytes("Content-Type: application/octet-stream" + lineEnd);
+        dos.writeBytes(lineEnd);
+
+        byte[] buffer = new byte[4096];
+        int bytesRead;
+
+        while ((bytesRead = fis.read(buffer)) != -1) {
+            dos.write(buffer, 0, bytesRead);
+        }
+
+        dos.writeBytes(lineEnd);
+        fis.close();
     }
 }

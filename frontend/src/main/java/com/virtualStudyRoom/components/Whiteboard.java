@@ -18,10 +18,9 @@ public class Whiteboard extends JPanel {
 
     private Color penColor = Color.WHITE;
     private float strokeSize = 3f;
+    private static Whiteboard whiteboard;
 
     private final JFrame parentFrame;
-    private SessionPanel sPanel;
-
     public static class Stroke {
         Color color;
         float strokeSize;
@@ -40,7 +39,7 @@ public class Whiteboard extends JPanel {
 
     public  Whiteboard(JFrame frame,SessionPanel sPanel) {
         this.parentFrame = frame;
-        this.sPanel = sPanel;
+        whiteboard = this;
 
         setBackground(Color.BLACK);
         setOpaque(true);
@@ -112,7 +111,6 @@ public class Whiteboard extends JPanel {
         setPreferredSize(new Dimension(canvasWidth, canvasHeight));
         revalidate();
         repaint();
-        // sPanel.refresh();
     }
 
     @Override
@@ -242,6 +240,10 @@ public class Whiteboard extends JPanel {
     public static class CanvasResizeDTO {
         public int canvasHeight;
         public String senderID;
+    }
+
+    public static Whiteboard getWhiteboard(){
+        return whiteboard;
     }
 
 }

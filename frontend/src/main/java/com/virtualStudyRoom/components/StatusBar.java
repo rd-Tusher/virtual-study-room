@@ -31,7 +31,6 @@ public class StatusBar extends JPanel{
     private MuteMic micLabel;
     private boolean isRecording = false;
     private boolean isMute = false;
-    private MainFrame mainFrame;
 
     private final ImageIcon stopIcon = loadIcon("assets/stopRecord.png",30);
     private final ImageIcon startIcon = loadIcon("assets/startRecord.png",30);
@@ -42,7 +41,7 @@ public class StatusBar extends JPanel{
     private final ScreenRecorder recorder = new ScreenRecorder();
     private RecordingBar recordingBar;
 
-    public StatusBar(RecordingBar recordingBar,SessionPanel sessionPanel){
+    public StatusBar(RecordingBar recordingBar,SessionPanel sessionPanel, MainFrame frame){
         this.recordingBar = recordingBar;
         setLayout(new FlowLayout(FlowLayout.CENTER,20,15));
         setBackground(new Color(60, 60, 60, 220));
@@ -55,7 +54,7 @@ public class StatusBar extends JPanel{
             public void mouseClicked(MouseEvent e){
                 toggleRecording();
             }
-        }); 
+        });
 
         micLabel = new MuteMic(mic);
         micLabel.setToolTipText("Mute");
@@ -78,20 +77,20 @@ public class StatusBar extends JPanel{
             public void mouseClicked(MouseEvent e){
                 sessionPanel.showUserPopup();
             }
-        });
+        }); 
 
         add(CreateLabel.createIcon("assets/maximize.png","Maximize"));
 
         // leave icon
         leavLabel = new JLabel(leave);
+        leavLabel.setToolTipText("leave session");
         leavLabel.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
         add(leavLabel);
         leavLabel.addMouseListener(new MouseAdapter() {
             @Override
             public void mouseClicked(MouseEvent e){
-                leaveSession();
-                mainFrame = new MainFrame();
-                mainFrame.showLanding();
+                JoinPage.getCheckModel();
+                frame.showLanding();
             }
         });
     }
@@ -104,7 +103,7 @@ public class StatusBar extends JPanel{
         g2.fillRoundRect(0 , 0, getWidth(), getHeight(),arc,arc);
     }
 
-        private void toggleRecording() {
+    private void toggleRecording() {
         if (!isRecording) {
             new Thread(() -> {
                 recorder.startRecording();
@@ -127,7 +126,7 @@ public class StatusBar extends JPanel{
         }
     }
 
-    private static ImageIcon loadIcon(String path, int size){
+    public static ImageIcon loadIcon(String path, int size){
         Image img = new ImageIcon(path).getImage().getScaledInstance(size, size, Image.SCALE_SMOOTH);
         return new ImageIcon(img);
     }
@@ -139,9 +138,8 @@ public class StatusBar extends JPanel{
         micLabel.setToolTipText(isMute ? "Unmute" : "Mute");
     }
 
-    private void leaveSession(){
-
-       SessionCheckModel info =  JoinPage.getCheckModel();
-       FrontendToBackend.leaveSession(info.sessionID, info.name, info.userID);
-    }
-}    
+    // private void leaveSession(){
+    //    JoinSessionResponse info =  JoinPage.getCheckModel();
+    //    FrontendToBackend.leaveSession(info.sessionID, info.name, info.userID);
+    // }
+}

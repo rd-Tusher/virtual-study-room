@@ -1,6 +1,6 @@
 package com.virtualStudyRoom.utils;
 
-import com.virtualStudyRoom.utils.ResponseModel.SessionCheckModel;
+import com.virtualStudyRoom.utils.ResponseModel.JoinSessionResponse;
 
 import javax.swing.*;
 import java.awt.*;
@@ -15,7 +15,7 @@ public class AnimatedTimerPanel extends JPanel {
     private JLabel secondsLabel;
     private Timer timer;
 
-    public AnimatedTimerPanel(SessionCheckModel response) {
+    public AnimatedTimerPanel(JoinSessionResponse response) {
         this.remainingSeconds = response.remainingSeconds;
 
         setBackground(Color.BLACK);
